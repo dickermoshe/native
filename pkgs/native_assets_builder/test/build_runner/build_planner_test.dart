@@ -36,7 +36,7 @@ void main() async {
       final graph = PackageGraph.fromPubDepsJsonString(result.stdout);
 
       final packageLayout = await PackageLayout.fromWorkingDirectory(
-          const LocalFileSystem(), nativeAddUri);
+          const LocalFileSystem(), nativeAddUri, 'native_add');
       final packagesWithNativeAssets =
           await packageLayout.packagesWithAssets(Hook.build);
 
@@ -61,12 +61,14 @@ void main() async {
       await runPubGet(workingDirectory: nativeAddUri, logger: logger);
 
       final packageLayout = await PackageLayout.fromWorkingDirectory(
-          const LocalFileSystem(), nativeAddUri);
+          const LocalFileSystem(), nativeAddUri, 'native_add');
       final packagesWithNativeAssets =
           await packageLayout.packagesWithAssets(Hook.build);
       final nativeAssetsBuildPlanner =
-          await NativeAssetsBuildPlanner.fromWorkingDirectory(
-        workingDirectory: nativeAddUri,
+          await NativeAssetsBuildPlanner.fromPackageConfigUri(
+        packageConfigUri: nativeAddUri.resolve(
+          '.dart_tool/package_config.json',
+        ),
         packagesWithNativeAssets: packagesWithNativeAssets,
         dartExecutable: Uri.file(Platform.resolvedExecutable),
         logger: logger,
@@ -88,12 +90,17 @@ void main() async {
         await runPubGet(workingDirectory: nativeAddUri, logger: logger);
 
         final packageLayout = await PackageLayout.fromWorkingDirectory(
-            const LocalFileSystem(), nativeAddUri);
+          const LocalFileSystem(),
+          nativeAddUri,
+          runPackageName,
+        );
         final packagesWithNativeAssets =
             await packageLayout.packagesWithAssets(Hook.build);
         final nativeAssetsBuildPlanner =
-            await NativeAssetsBuildPlanner.fromWorkingDirectory(
-          workingDirectory: nativeAddUri,
+            await NativeAssetsBuildPlanner.fromPackageConfigUri(
+          packageConfigUri: nativeAddUri.resolve(
+            '.dart_tool/package_config.json',
+          ),
           packagesWithNativeAssets: packagesWithNativeAssets,
           dartExecutable: Uri.file(Platform.resolvedExecutable),
           logger: logger,

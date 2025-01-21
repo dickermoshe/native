@@ -56,7 +56,6 @@ Future<BuildResult?> build(
   LinkModePreference linkModePreference = LinkModePreference.dynamic,
   CCompilerConfig? cCompiler,
   List<String>? capturedLogs,
-  PackageLayout? packageLayout,
   String? runPackageName,
   IOSSdk? targetIOSSdk,
   int? targetIOSVersion,
@@ -70,12 +69,18 @@ Future<BuildResult?> build(
   final targetOS = target?.os ?? OS.current;
   final runPackageName_ =
       runPackageName ?? packageUri.pathSegments.lastWhere((e) => e.isNotEmpty);
+  final packageLayout = await PackageLayout.fromWorkingDirectory(
+    const LocalFileSystem(),
+    packageUri,
+    runPackageName_,
+  );
   return await runWithLog(capturedLogs, () async {
     final result = await NativeAssetsBuildRunner(
       logger: logger,
       dartExecutable: dartExecutable,
       fileSystem: const LocalFileSystem(),
       hookEnvironment: hookEnvironment,
+      packageLayout: packageLayout,
     ).build(
       inputCreator: () {
         final inputBuilder = BuildInputBuilder();
@@ -86,26 +91,23 @@ Future<BuildResult?> build(
             linkModePreference: linkModePreference,
             cCompiler: cCompiler ?? dartCICompilerConfig,
             iOS: targetOS == OS.iOS
-                ? IOSConfig(
+                ? IOSCodeConfig(
                     targetSdk: targetIOSSdk!,
                     targetVersion: targetIOSVersion!,
                   )
                 : null,
             macOS: targetOS == OS.macOS
-                ? MacOSConfig(
+                ? MacOSCodeConfig(
                     targetVersion: targetMacOSVersion ?? defaultMacOSVersion)
                 : null,
             android: targetOS == OS.android
-                ? AndroidConfig(targetNdkApi: targetAndroidNdkApi!)
+                ? AndroidCodeConfig(targetNdkApi: targetAndroidNdkApi!)
                 : null,
           );
         }
         return inputBuilder;
       },
       inputValidator: inputValidator,
-      workingDirectory: packageUri,
-      packageLayout: packageLayout,
-      runPackageName: runPackageName_,
       linkingEnabled: linkingEnabled,
       buildAssetTypes: buildAssetTypes,
       buildValidator: buildValidator,
@@ -134,7 +136,6 @@ Future<LinkResult?> link(
   LinkModePreference linkModePreference = LinkModePreference.dynamic,
   CCompilerConfig? cCompiler,
   List<String>? capturedLogs,
-  PackageLayout? packageLayout,
   String? runPackageName,
   required BuildResult buildResult,
   Uri? resourceIdentifiers,
@@ -148,11 +149,17 @@ Future<LinkResult?> link(
   final targetOS = target?.os ?? OS.current;
   final runPackageName_ =
       runPackageName ?? packageUri.pathSegments.lastWhere((e) => e.isNotEmpty);
+  final packageLayout = await PackageLayout.fromWorkingDirectory(
+    const LocalFileSystem(),
+    packageUri,
+    runPackageName_,
+  );
   return await runWithLog(capturedLogs, () async {
     final result = await NativeAssetsBuildRunner(
       logger: logger,
       dartExecutable: dartExecutable,
       fileSystem: const LocalFileSystem(),
+      packageLayout: packageLayout,
     ).link(
       inputCreator: () {
         final inputBuilder = LinkInputBuilder();
@@ -163,31 +170,28 @@ Future<LinkResult?> link(
             linkModePreference: linkModePreference,
             cCompiler: cCompiler ?? dartCICompilerConfig,
             iOS: targetOS == OS.iOS
-                ? IOSConfig(
+                ? IOSCodeConfig(
                     targetSdk: targetIOSSdk!,
                     targetVersion: targetIOSVersion!,
                   )
                 : null,
             macOS: targetOS == OS.macOS
-                ? MacOSConfig(
+                ? MacOSCodeConfig(
                     targetVersion: targetMacOSVersion ?? defaultMacOSVersion)
                 : null,
             android: targetOS == OS.android
-                ? AndroidConfig(targetNdkApi: targetAndroidNdkApi!)
+                ? AndroidCodeConfig(targetNdkApi: targetAndroidNdkApi!)
                 : null,
           );
         }
         return inputBuilder;
       },
       inputValidator: inputValidator,
-      workingDirectory: packageUri,
-      packageLayout: packageLayout,
       buildResult: buildResult,
       resourceIdentifiers: resourceIdentifiers,
       buildAssetTypes: buildAssetTypes,
       linkValidator: linkValidator,
       applicationAssetValidator: applicationAssetValidator,
-      runPackageName: runPackageName_,
     );
 
     if (result != null) {
@@ -223,10 +227,16 @@ Future<(BuildResult?, LinkResult?)> buildAndLink(
     await runWithLog(capturedLogs, () async {
       final runPackageName_ = runPackageName ??
           packageUri.pathSegments.lastWhere((e) => e.isNotEmpty);
+      final packageLayout = await PackageLayout.fromWorkingDirectory(
+        const LocalFileSystem(),
+        packageUri,
+        runPackageName_,
+      );
       final buildRunner = NativeAssetsBuildRunner(
         logger: logger,
         dartExecutable: dartExecutable,
         fileSystem: const LocalFileSystem(),
+        packageLayout: packageLayout,
       );
       final targetOS = target?.os ?? OS.current;
       final buildResult = await buildRunner.build(
@@ -239,26 +249,23 @@ Future<(BuildResult?, LinkResult?)> buildAndLink(
               linkModePreference: linkModePreference,
               cCompiler: cCompiler ?? dartCICompilerConfig,
               iOS: targetOS == OS.iOS
-                  ? IOSConfig(
+                  ? IOSCodeConfig(
                       targetSdk: targetIOSSdk!,
                       targetVersion: targetIOSVersion!,
                     )
                   : null,
               macOS: targetOS == OS.macOS
-                  ? MacOSConfig(
+                  ? MacOSCodeConfig(
                       targetVersion: targetMacOSVersion ?? defaultMacOSVersion)
                   : null,
               android: targetOS == OS.android
-                  ? AndroidConfig(targetNdkApi: targetAndroidNdkApi!)
+                  ? AndroidCodeConfig(targetNdkApi: targetAndroidNdkApi!)
                   : null,
             );
           }
           return inputBuilder;
         },
         inputValidator: buildInputValidator,
-        workingDirectory: packageUri,
-        packageLayout: packageLayout,
-        runPackageName: runPackageName_,
         linkingEnabled: true,
         buildAssetTypes: buildAssetTypes,
         buildValidator: buildValidator,
@@ -285,31 +292,28 @@ Future<(BuildResult?, LinkResult?)> buildAndLink(
               linkModePreference: linkModePreference,
               cCompiler: cCompiler ?? dartCICompilerConfig,
               iOS: targetOS == OS.iOS
-                  ? IOSConfig(
+                  ? IOSCodeConfig(
                       targetSdk: targetIOSSdk!,
                       targetVersion: targetIOSVersion!,
                     )
                   : null,
               macOS: targetOS == OS.macOS
-                  ? MacOSConfig(
+                  ? MacOSCodeConfig(
                       targetVersion: targetMacOSVersion ?? defaultMacOSVersion)
                   : null,
               android: targetOS == OS.android
-                  ? AndroidConfig(targetNdkApi: targetAndroidNdkApi!)
+                  ? AndroidCodeConfig(targetNdkApi: targetAndroidNdkApi!)
                   : null,
             );
           }
           return inputBuilder;
         },
         inputValidator: linkInputValidator,
-        workingDirectory: packageUri,
-        packageLayout: packageLayout,
         buildResult: buildResult,
         resourceIdentifiers: resourceIdentifiers,
         buildAssetTypes: buildAssetTypes,
         linkValidator: linkValidator,
         applicationAssetValidator: applicationAssetValidator,
-        runPackageName: runPackageName_,
       );
 
       if (linkResult != null) {
@@ -374,15 +378,19 @@ final CCompilerConfig? dartCICompilerConfig = (() {
           .map((arg) => arg.trim())
           .where((arg) => arg.isNotEmpty)
           .toList();
-  final hasEnvScriptArgs = envScriptArgs != null && envScriptArgs.isNotEmpty;
 
   if (cc != null && ar != null && ld != null) {
     return CCompilerConfig(
       archiver: Uri.file(ar),
       compiler: Uri.file(cc),
-      envScript: envScript != null ? Uri.file(envScript) : null,
-      envScriptArgs: hasEnvScriptArgs ? envScriptArgs : null,
       linker: Uri.file(ld),
+      windows: WindowsCCompilerConfig(
+          developerCommandPrompt: envScript == null
+              ? null
+              : DeveloperCommandPrompt(
+                  script: Uri.file(envScript),
+                  arguments: envScriptArgs ?? [],
+                )),
     );
   }
   return null;

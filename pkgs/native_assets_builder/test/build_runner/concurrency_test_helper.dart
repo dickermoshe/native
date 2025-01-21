@@ -23,11 +23,17 @@ void main(List<String> args) async {
     ..onRecord.listen((event) => print(event.message));
 
   final targetOS = OS.current;
+  final packageLayout = await PackageLayout.fromWorkingDirectory(
+    const LocalFileSystem(),
+    packageUri,
+    packageName,
+  );
   final result = await NativeAssetsBuildRunner(
     logger: logger,
     dartExecutable: dartExecutable,
     singleHookTimeout: timeout,
     fileSystem: const LocalFileSystem(),
+    packageLayout: packageLayout,
   ).build(
     inputCreator: () => BuildInputBuilder()
       ..config.setupCode(
@@ -36,10 +42,9 @@ void main(List<String> args) async {
         linkModePreference: LinkModePreference.dynamic,
         cCompiler: dartCICompilerConfig,
         macOS: targetOS == OS.macOS
-            ? MacOSConfig(targetVersion: defaultMacOSVersion)
+            ? MacOSCodeConfig(targetVersion: defaultMacOSVersion)
             : null,
       ),
-    workingDirectory: packageUri,
     linkingEnabled: false,
     buildAssetTypes: [CodeAsset.type, DataAsset.type],
     inputValidator: (input) async => [
@@ -51,7 +56,6 @@ void main(List<String> args) async {
       ...await validateDataAssetBuildOutput(input, output),
     ],
     applicationAssetValidator: validateCodeAssetInApplication,
-    runPackageName: packageName,
   );
   if (result == null) {
     throw Error();
